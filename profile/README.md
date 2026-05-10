@@ -10,6 +10,21 @@
 
 ---
 
+## TL;DR
+
+ARCP is a transport-agnostic JSON wire protocol for _running_ agents, not just describing them.
+
+- **Where it fits:** MCP says _what tools exist_; ARCP says _how execution happens_ — sessions, jobs, streams, cancellation, resumability, audit.
+- **Core primitives:** authenticated sessions, durable jobs with heartbeats/checkpoints, typed streams (text/binary/event/log/metric/thought), cooperative `cancel` + `interrupt`, lease-scoped permissions, first-class human-in-the-loop (`human.input.request`, `human.choice.request`), addressable artifacts, read-only observer subscriptions, agent-to-agent delegation/handoff with shared `trace_id`.
+- **Wire shape:** one canonical envelope (`arcp`, `id`, `type`, `session_id`, `trace_id`, `payload`, ...). Two idempotency keys: `id` (transport) and `idempotency_key` (logical intent across reconnects).
+- **Transports:** WebSocket + stdio mandatory; HTTP/2, QUIC, MQ optional. Same semantics on all of them.
+- **Built-in batteries:** canonical error taxonomy (`PERMISSION_DENIED`, `HEARTBEAT_LOST`, `LEASE_EXPIRED`, ...), reserved metric names (`tokens.used`, `cost.usd`, `latency.ms`, ...), W3C trace propagation, namespaced extension mechanism.
+- **Status:** Draft (Rev 2), spec v1.0, 11 reference SDKs (TS, Python, Go, Rust, Java, Kotlin, Swift, Ruby, PHP, C#, F#).
+
+One-line motto: **MCP describes capabilities. ARCP operationalizes them.**
+
+---
+
 ## Table of Contents
 
 1. [Overview](#overview)
