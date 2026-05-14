@@ -8,13 +8,6 @@ ARCP is a transport-agnostic wire protocol for **running agents** — authentica
   <img src="https://img.shields.io/badge/SDKs-11-blue" alt="Reference SDKs" />
 </p>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/agentruntimecontrolprotocol/.github/main/diagrams/arcp-dark.svg">
-    <img alt="ARCP runtime architecture" src="https://raw.githubusercontent.com/agentruntimecontrolprotocol/.github/main/diagrams/arcp-light.svg" width="720">
-  </picture>
-</p>
-
 ## What's in the box
 
 - **Authenticated sessions** with capability negotiation, durable reconnect, and credential rotation.
