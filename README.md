@@ -4,8 +4,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/spec-1.0-blue" alt="Spec Version" />
-  <img src="https://img.shields.io/badge/status-Draft%20(Rev%202)-orange" alt="Spec Status" />
   <img src="https://img.shields.io/badge/license-Apache--2.0-green" alt="License" />
+  <img src="https://img.shields.io/badge/SDKs-11-blue" alt="Reference SDKs" />
 </p>
 
 ---
@@ -14,14 +14,12 @@
 
 ARCP is a transport-agnostic JSON wire protocol for _running_ agents, not just describing them.
 
-- **Where it fits:** MCP says _what tools exist_; ARCP says _how execution happens_ — sessions, jobs, streams, cancellation, resumability, audit.
+- **What it does:** Defines _how execution happens_ at the wire level — sessions, jobs, streams, cancellation, resumability, audit — independent of any tool-schema or capability-discovery layer.
 - **Core primitives:** authenticated sessions, durable jobs with heartbeats/checkpoints, typed streams (text/binary/event/log/metric/thought), cooperative `cancel` + `interrupt`, lease-scoped permissions, first-class human-in-the-loop (`human.input.request`, `human.choice.request`), addressable artifacts, read-only observer subscriptions, agent-to-agent delegation/handoff with shared `trace_id`.
 - **Wire shape:** one canonical envelope (`arcp`, `id`, `type`, `session_id`, `trace_id`, `payload`, ...). Two idempotency keys: `id` (transport) and `idempotency_key` (logical intent across reconnects).
 - **Transports:** WebSocket + stdio mandatory; HTTP/2, QUIC, MQ optional. Same semantics on all of them.
 - **Built-in batteries:** canonical error taxonomy (`PERMISSION_DENIED`, `HEARTBEAT_LOST`, `LEASE_EXPIRED`, ...), reserved metric names (`tokens.used`, `cost.usd`, `latency.ms`, ...), W3C trace propagation, namespaced extension mechanism.
-- **Status:** Draft (Rev 2), spec v1.0, 11 reference SDKs (TS, Python, Go, Rust, Java, Kotlin, Swift, Ruby, PHP, C#, F#).
-
-One-line motto: **MCP describes capabilities. ARCP operationalizes them.**
+- **Status:** Spec v1.0 with 11 reference SDKs (TS, Python, Go, Rust, Java, Kotlin, Swift, Ruby, PHP, C#, F#).
 
 ---
 
@@ -54,8 +52,7 @@ One-line motto: **MCP describes capabilities. ARCP operationalizes them.**
 12. [Examples](#examples)
 13. [SDKs & Clients](#sdks--clients)
 14. [Compatibility & Interoperability](#compatibility--interoperability)
-15. [Comparison with Other Protocols](#comparison-with-other-protocols)
-16. [Performance & Scaling](#performance--scaling)
+15. [Performance & Scaling](#performance--scaling)
 17. [Conformance Testing](#conformance-testing)
 18. [Roadmap](#roadmap)
 19. [Governance](#governance)
@@ -74,7 +71,7 @@ ARCP (Agent Runtime Control Protocol) is a wire-level interaction specification 
 
 The actors are **active clients** (which issue commands), **runtimes** (which execute work and emit events), **observers** (which subscribe read-only to event streams), **tool hosts** (which execute capabilities behind the runtime), and **humans** (who answer typed input and approval requests through first-class protocol primitives). ARCP defines the envelopes, lifecycles, and contracts that bind these actors together.
 
-What makes ARCP different is that it is deliberately a _runtime_ protocol, not a _capability discovery_ protocol. MCP describes _what_ exists; ARCP describes _how execution occurs_ — including the semantics of cancellation, heartbeats, leases, replay, and human input that capability-only protocols leave as exercises for the implementer.
+ARCP is deliberately a _runtime_ protocol, not a _capability discovery_ protocol. It describes _how execution occurs_ — including the semantics of cancellation, heartbeats, leases, replay, and human input — which most agent stacks today leave to per-vendor convention.
 
 **At a glance:**
 
@@ -93,24 +90,14 @@ What makes ARCP different is that it is deliberately a _runtime_ protocol, not a
 
 Agent runtimes today re-implement the same primitives — streaming, cancellation, heartbeats, durable jobs, human approval, audit, multi-agent handoff — in mutually incompatible ways. The result is that a tool host written for one runtime cannot be observed, federated with, or substituted for one written for another, and that operationally critical concerns (auth, retention, leases, replay) are left to ad-hoc per-vendor conventions.
 
-ARCP's premise is that the _capability_ layer (what tools exist and what their schemas are) is largely solved by MCP and equivalents, but the _execution_ layer (how those capabilities are invoked, observed, paused, cancelled, retried, audited, and federated) is not. ARCP fills exactly that gap.
-
-### Why a New Protocol?
-
-| Existing Approach                     | What It Does Well                                       | Where It Falls Short for Runtime Control                                                                                                                           |
-| ------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| MCP                                   | Capability discovery, tool schemas, resources, prompts. | No durable jobs, no streaming contract beyond resources, no cancellation taxonomy, no first-class human-in-the-loop, no lease-scoped permissions, no resumability. |
-| JSON-RPC 2.0                          | Simple request/response framing.                        | No streaming, no sessions, no events, no auth, no traceability beyond `id`/result.                                                                                 |
-| OpenAI Assistants / vendor agent APIs | Hosted runtimes with assistants, threads, tool calls.   | Vendor-specific, not transport-agnostic, no peer federation, opaque to external observers.                                                                         |
-| A2A / agent-to-agent prototypes       | Peer agent messaging.                                   | Underspecified runtime semantics; no canonical error model, lease lifecycle, or replay contract.                                                                   |
-| gRPC + custom services                | Strong typing, bidi streams.                            | Reinvents sessions/auth/observers per project; no shared error or metric vocabulary across runtimes.                                                               |
+ARCP's premise is that the _execution_ layer (how capabilities are invoked, observed, paused, cancelled, retried, audited, and federated) is what's structurally missing from agent stacks today. ARCP fills exactly that gap.
 
 ### Non-Goals
 
 - LLM prompt formats.
 - Vector database standards.
 - Model architectures.
-- Tool schema formats (delegated to MCP and equivalents).
+- Tool schema formats.
 - UI rendering systems.
 - Authentication provider implementations (ARCP defines the exchange shape; not who issues credentials).
 - Persistence engine requirements.
@@ -124,13 +111,12 @@ ARCP MAY integrate with all of these; it does not redefine them.
 | Field                                | Value                                                                                                                       |
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | **Spec version**                     | 1.0                                                                                                                         |
-| **Status**                           | Draft (Revision 2)                                                                                                          |
 | **Stability guarantee**              | Wire-format breaking changes require a major version bump. Extensions evolve under their own namespaces (§21).              |
-| **Last reviewed**                    | 2026-05-10                                                                                                                  |
+| **Last reviewed**                    | 2026-05-14                                                                                                                  |
 | **Editors**                          | Nick Ficano et al.                                                                                                          |
 | **Implementations known to interop** | TypeScript, Python, Go, Rust, Java, Kotlin, Swift, Ruby, PHP, C#, F# reference SDKs (see [SDKs & Clients](#sdks--clients)). |
 
-> **Stability disclaimer:** Revision 2 is a draft. Wire shapes for core message types (envelope, session handshake, job lifecycle, streams, leases, artifacts, errors) are intended to remain stable through the 1.x line, but any field MAY shift before the spec exits draft. Pin to a spec version and exercise the conformance suite before depending on cross-runtime interop.
+> **Stability:** Wire shapes for core message types (envelope, session handshake, job lifecycle, streams, leases, artifacts, errors) are stable through the 1.x line. Additive changes (new optional fields, new namespaced types, new capabilities) are non-breaking; removed or repurposed fields require a major bump. Pin to a spec version and exercise the conformance suite before depending on cross-runtime interop.
 
 ---
 
@@ -199,30 +185,12 @@ The seam between participants of differing trust levels (`untrusted`, `constrain
 
 ### System Diagram
 
-```mermaid
-sequenceDiagram
-    participant Client as Active Client
-    participant Runtime as ARCP Runtime
-    participant Tool as Tool Host
-    participant Observer as Observer
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="diagrams/arcp-dark.svg">
+  <img alt="ARCP runtime architecture: client traverses a transport into the runtime, where a dispatcher routes envelopes to job, stream, subscription, lease, and artifact managers backed by an event log." src="diagrams/arcp-light.svg">
+</picture>
 
-    Client->>Runtime: session.open (auth, capabilities)
-    Runtime-->>Client: session.challenge
-    Client->>Runtime: session.authenticate
-    Runtime-->>Client: session.accepted (session_id, runtime identity)
-
-    Observer->>Runtime: subscribe (filter)
-    Runtime-->>Observer: subscribe.accepted
-
-    Client->>Runtime: tool.invoke (idempotency_key, args)
-    Runtime-->>Client: job.accepted (correlation_id)
-    Runtime->>Tool: invoke capability
-    Runtime-->>Client: stream.chunk (partial)
-    Runtime-->>Observer: subscribe.event (job.progress)
-    Tool-->>Runtime: result
-    Runtime-->>Client: tool.result (artifact_ref)
-    Runtime-->>Observer: subscribe.event (job.completed)
-```
+The runtime accepts envelopes off any negotiated transport (WebSocket, stdio, in-memory, …), authenticates them through the handshake driver, and routes them through a single dispatcher that owns the managers responsible for sessions, jobs, streams, subscriptions, leases, and artifacts. A typical invocation flows `session.open` → `session.accepted` → `tool.invoke` → `job.accepted` → streamed `stream.chunk` / `job.progress` → terminal `tool.result` (or a job terminal event), with observers reading the same event surface read-only via `subscribe`.
 
 ### Components
 
@@ -239,7 +207,7 @@ sequenceDiagram
 
 ```text
 +-----------------------------------------------------------+
-|  Capability Layer (MCP-compatible: tool schemas, prompts) |
+|  Capability Layer (tool schemas, prompts — out of scope)  |
 +-----------------------------------------------------------+
 |  ARCP Runtime Layer                                       |
 |  Identity & Sessions · Streams · Jobs · Subscriptions     |
@@ -264,7 +232,7 @@ sequenceDiagram
 > this section are to be interpreted as described in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119)
 > and [RFC 8174](https://datatracker.ietf.org/doc/html/rfc8174).
 
-The canonical normative source is [`spec/docs/RFC 0001  v2 — Agent Runtime Control Protocol.md`](../spec/docs/RFC%200001%20%20v2%20%E2%80%94%20Agent%20Runtime%20Control%20Protocol.md). This section is a faithful summary; in any conflict, the RFC governs.
+The canonical normative source is [`spec/docs/RFC 0001 — Agent Runtime Control Protocol`](../spec/). This section is a faithful summary; in any conflict, the RFC governs.
 
 ### Versioning
 
@@ -382,22 +350,10 @@ Until `session.accepted` is received, clients MUST NOT send any non-handshake me
 
 ### Session Lifecycle
 
-```mermaid
-stateDiagram-v2
-    [*] --> Connecting
-    Connecting --> Negotiating: transport open + session.open
-    Negotiating --> Authenticating: session.challenge
-    Negotiating --> Active: session.accepted
-    Authenticating --> Active: session.accepted
-    Authenticating --> Closed: session.rejected
-    Active --> Active: command / event
-    Active --> Refreshing: session.refresh
-    Refreshing --> Active: session.authenticate
-    Refreshing --> Closed: session.evicted
-    Active --> Closing: session.close
-    Closing --> Closed
-    Active --> Closed: timeout / eviction
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="diagrams/session-lifecycle-dark.svg">
+  <img alt="ARCP session lifecycle: Connecting → Negotiating → (Authenticating) → Active, with Refreshing branch, Closing/Closed terminals, and a dashed durable-resume edge from Closed back to Connecting." src="diagrams/session-lifecycle-light.svg">
+</picture>
 
 | State       | Allowed Inbound                                             | Allowed Outbound       | Notes                         |
 | ----------- | ----------------------------------------------------------- | ---------------------- | ----------------------------- |
@@ -631,17 +587,17 @@ The reference implementation is split across per-language SDKs in this workspace
 
 | Language   | Repository                              | Conformance                |
 | ---------- | --------------------------------------- | -------------------------- |
-| TypeScript | [`typescript-sdk/`](../typescript-sdk/) | Tracking spec v1.0 (Rev 2) |
-| Python     | [`python-sdk/`](../python-sdk/)         | Tracking spec v1.0 (Rev 2) |
-| Go         | [`go-sdk/`](../go-sdk/)                 | Tracking spec v1.0 (Rev 2) |
-| Rust       | [`rust-sdk/`](../rust-sdk/)             | Tracking spec v1.0 (Rev 2) |
-| Java       | [`java-sdk/`](../java-sdk/)             | Tracking spec v1.0 (Rev 2) |
-| Kotlin     | [`kotlin-sdk/`](../kotlin-sdk/)         | Tracking spec v1.0 (Rev 2) |
-| Swift      | [`swift-sdk/`](../swift-sdk/)           | Tracking spec v1.0 (Rev 2) |
-| Ruby       | [`ruby-sdk/`](../ruby-sdk/)             | Tracking spec v1.0 (Rev 2) |
-| PHP        | [`php-sdk/`](../php-sdk/)               | Tracking spec v1.0 (Rev 2) |
-| C#         | [`csharp-sdk/`](../csharp-sdk/)         | Tracking spec v1.0 (Rev 2) |
-| F#         | [`fsharp-sdk/`](../fsharp-sdk/)         | Tracking spec v1.0 (Rev 2) |
+| TypeScript | [`typescript-sdk/`](../typescript-sdk/) | Tracking spec v1.0 |
+| Python     | [`python-sdk/`](../python-sdk/)         | Tracking spec v1.0 |
+| Go         | [`go-sdk/`](../go-sdk/)                 | Tracking spec v1.0 |
+| Rust       | [`rust-sdk/`](../rust-sdk/)             | Tracking spec v1.0 |
+| Java       | [`java-sdk/`](../java-sdk/)             | Tracking spec v1.0 |
+| Kotlin     | [`kotlin-sdk/`](../kotlin-sdk/)         | Tracking spec v1.0 |
+| Swift      | [`swift-sdk/`](../swift-sdk/)           | Tracking spec v1.0 |
+| Ruby       | [`ruby-sdk/`](../ruby-sdk/)             | Tracking spec v1.0 |
+| PHP        | [`php-sdk/`](../php-sdk/)               | Tracking spec v1.0 |
+| C#         | [`csharp-sdk/`](../csharp-sdk/)         | Tracking spec v1.0 |
+| F#         | [`fsharp-sdk/`](../fsharp-sdk/)         | Tracking spec v1.0 |
 
 ---
 
@@ -800,32 +756,13 @@ Receivers MUST tolerate unknown optional fields and unknown namespaced message t
 
 ### Bridges & adapters
 
-| Bridge          | From                  | To                 | Status                                  |
-| --------------- | --------------------- | ------------------ | --------------------------------------- |
-| MCP wrap        | MCP server            | ARCP runtime       | Spec-defined (§20); SDK helpers planned |
-| JSON-RPC        | JSON-RPC 2.0 endpoint | ARCP `tool.invoke` | Adapter pattern documented              |
-| OpenAI tools    | OpenAI tool schema    | ARCP capability    | Translation guidance only               |
-| Anthropic tools | Anthropic tool schema | ARCP capability    | Translation guidance only               |
+| Bridge          | From                  | To                 | Status                     |
+| --------------- | --------------------- | ------------------ | -------------------------- |
+| JSON-RPC        | JSON-RPC 2.0 endpoint | ARCP `tool.invoke` | Adapter pattern documented |
+| OpenAI tools    | OpenAI tool schema    | ARCP capability    | Translation guidance only  |
+| Anthropic tools | Anthropic tool schema | ARCP capability    | Translation guidance only  |
 
-ARCP delegates resource semantics to MCP (§20). Implementations needing first-class resource lifecycle SHOULD model resources as artifacts or `kind: event` streams.
-
----
-
-## Comparison with Other Protocols
-
-| Dimension                             | ARCP       | MCP     | OpenAI Assistants | A2A     | JSON-RPC 2.0 |
-| ------------------------------------- | ---------- | ------- | ----------------- | ------- | ------------ |
-| Transport-agnostic                    | ✅         | ✅      | ❌ (vendor HTTP)  | ✅      | ✅           |
-| Capability negotiation                | ✅         | ✅      | partial           | partial | ❌           |
-| Multi-agent native                    | ✅         | ❌      | ❌                | ✅      | ❌           |
-| Human-in-the-loop primitives          | ✅         | ❌      | partial           | partial | ❌           |
-| Resumable sessions                    | ✅         | ❌      | partial           | ❌      | ❌           |
-| Built-in audit / subscriptions        | ✅         | ❌      | ❌                | ❌      | ❌           |
-| Streaming (text/binary/event/thought) | ✅         | partial | partial           | partial | ❌           |
-| Canonical error taxonomy              | ✅         | partial | ❌                | ❌      | partial      |
-| Lease-based permissions               | ✅         | ❌      | ❌                | ❌      | ❌           |
-| Open governance                       | ✅ (Draft) | ✅      | ❌                | ✅      | ✅           |
-| Reference impl languages              | 11         | many    | vendor SDKs       | varies  | many         |
+Implementations needing first-class resource lifecycle SHOULD model resources as artifacts or `kind: event` streams.
 
 ---
 
@@ -857,13 +794,12 @@ arcp-cts run --transport ws --runtime ./bin/runtime
 
 ## Roadmap
 
-| Milestone                | Target  | Description                                                 |
-| ------------------------ | ------- | ----------------------------------------------------------- |
-| Spec v1.0 — Rev 2 freeze | 2026-Q3 | Draft → Candidate after CTS green across reference SDKs     |
-| CTS v0.1                 | 2026-Q3 | Wire-format and lifecycle tests for all 11 SDKs             |
-| Spec v1.0 — Stable       | 2026-Q4 | Wire-stable; extension promotion process exercised          |
-| Workflow-as-data         | 2027    | Formal `workflow.start`/`workflow.complete` payload schemas |
-| Federated runtime mesh   | 2027+   | Discovery + signed capability manifests                     |
+| Milestone              | Target  | Description                                                 |
+| ---------------------- | ------- | ----------------------------------------------------------- |
+| CTS v0.1               | 2026-Q3 | Wire-format and lifecycle tests for all 11 SDKs             |
+| Workflow-as-data       | 2027    | Formal `workflow.start`/`workflow.complete` payload schemas |
+| Federated runtime mesh | 2027+   | Discovery + signed capability manifests                     |
+| Budget propagation     | 2027+   | Cost/quota propagation across `agent.delegate` boundaries   |
 
 Out of scope, indefinitely: LLM prompt formats, model architectures, vector DB standards, UI rendering systems, authentication provider implementations, persistence engine requirements.
 
@@ -897,9 +833,6 @@ This project adheres to the [Contributor Covenant](https://www.contributor-coven
 ---
 
 ## FAQ
-
-**Why not just use MCP?**
-MCP describes capabilities; ARCP describes execution. ARCP MAY wrap MCP servers (§20). The two are complementary, not competitive.
 
 **Is this compatible with OpenAI / Anthropic tool schemas?**
 Yes. Tool schemas live at the capability layer; ARCP carries invocations, results, and lifecycle around whatever schema the capability declares.
@@ -941,7 +874,7 @@ Namespaced types (`arcpx.<vendor>.<name>.v<n>` or reverse-DNS), advertised via `
 
 ## References
 
-- [RFC 0001 v2 — Agent Runtime Control Protocol](../spec/docs/RFC%200001%20%20v2%20%E2%80%94%20Agent%20Runtime%20Control%20Protocol.md) — normative source.
+- [RFC 0001 — Agent Runtime Control Protocol](../spec/) — normative source.
 - [RFC 2119 — Key words for use in RFCs](https://datatracker.ietf.org/doc/html/rfc2119)
 - [RFC 8174 — Ambiguity of uppercase vs lowercase in RFC 2119](https://datatracker.ietf.org/doc/html/rfc8174)
 - [RFC 3339 — Date and Time on the Internet](https://datatracker.ietf.org/doc/html/rfc3339)
@@ -949,7 +882,6 @@ Namespaced types (`arcpx.<vendor>.<name>.v<n>` or reverse-DNS), advertised via `
 - [JSON-RPC 2.0 Specification](https://www.jsonrpc.org/specification)
 - [W3C Trace Context](https://www.w3.org/TR/trace-context/)
 - [OpenTelemetry Semantic Conventions](https://opentelemetry.io/docs/specs/semconv/)
-- [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)
 
 ---
 
@@ -959,4 +891,4 @@ The specification text in this repository is licensed under [CC BY 4.0](https://
 
 ---
 
-<sub>ARCP 1.0 (Draft, Revision 2) · Last reviewed 2026-05-10 · Editors: Nick Ficano et al.</sub>
+<sub>ARCP 1.0 · Last reviewed 2026-05-14 · Editors: Nick Ficano et al.</sub>
